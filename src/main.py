@@ -17,34 +17,42 @@ class MainWidget(QtWidgets.QWidget):
         super().__init__()
         self.setMinimumSize(750, 300)
         self.setAcceptDrops(True)
+
+        buttons_layout = self.construirBotones()
+
         # construccion ventana
         self.mainLayout = QtWidgets.QVBoxLayout(self)
         self.textoInicio = self.textoGrande("Arrastre los archivos aqui")
         self.textoInformacion = QtWidgets.QLabel("hola")
-        self.mainLayout.addWidget(self.textoInicio)
-        self.mainLayout.addWidget(self.textoInformacion)
-        self.mainLayout.addLayout(self.construirBotones())
+        self.textoInformacion.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft)
+
+        # Crear un QScrollArea para la etiqueta de texto
+        scroll_area = QtWidgets.QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(self.textoInformacion)
+        scroll_area.setFixedHeight(150)
 
         # construir tabla
         self.tabla = Tabla()
+        self.tabla.setVisible(False)
         self.tabla.RowCountChanged.connect(self.onRowCountChanged)
         # conectar botones a tabla
-        self.btnLimpiarTodo.clicked.connect(self.tabla.removeAllRows)
+        self.btnLimpiarTodo.clicked.connect(self.onLimpiarTodo)
+
+        self.mainLayout.addWidget(self.tabla)
+        self.mainLayout.addWidget(self.textoInicio)
+        self.mainLayout.addWidget(scroll_area)
+        self.mainLayout.addLayout(buttons_layout)
+
+    def onLimpiarTodo(self):
+        self.tabla.removeAllRows()
+        self.textoInformacion.setText("Limpio")
 
     def onRowCountChanged(self, cant):
-        print(cant)
         if cant == 0:
-            # ocultar tabla, mostrar mensajew
-            index = self.mainLayout.indexOf(self.tabla)
-            self.mainLayout.removeWidget(self.tabla)
-            self.mainLayout.insertWidget(index, self.textoInicio)
             self.tabla.setVisible(False)
             self.textoInicio.setVisible(True)
         else:
-            # mostrar tabla, ocultar mensaje
-            index = self.mainLayout.indexOf(self.textoInicio)
-            self.mainLayout.removeWidget(self.textoInicio)
-            self.mainLayout.insertWidget(index, self.tabla)
             self.tabla.setVisible(True)
             self.textoInicio.setVisible(False)
 
@@ -99,22 +107,12 @@ class MainWidget(QtWidgets.QWidget):
             event.acceptProposedAction()
 
     def construirTabla(self, listaPath: list[str]):
-        if self.tabla.rowCount() != 0:
-            # TODO asegurar que son unicos
-            # hay que agregar los archivos
-            row_start = self.tabla.rowCount()
-            self.tabla.setRowCount(row_start + len(listaPath))
-            for row, path in enumerate(listaPath):
-                item = QtWidgets.QTableWidgetItem(path)
-                self.tabla.setItem(row_start + row, 0, item)
-        else:
-            # hay que construir la tabla
-            self.tabla.setColumnCount(1)
-            self.tabla.setHorizontalHeaderLabels(["Archivo"])
-            self.tabla.setRowCount(len(listaPath))
-            for row, path in enumerate(listaPath):
-                item = QtWidgets.QTableWidgetItem(path)
-                self.tabla.setItem(row, 0, item)
+        for path in listaPath:
+            rta = self.tabla.addRow(path)
+            if rta is not None:
+                self.textoInformacion.setText(self.textoInformacion.text() + "\n" + rta)
+
+        self.tabla.ordenar()
 
 
 if __name__ == "__main__":
