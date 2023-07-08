@@ -1,7 +1,17 @@
+# para que se muestre el icono en el task bar, y no tome el icono de script python o ejecutable estandar
+import ctypes
+
+myappid = "BraianAzcune.cambiarFecha.0.0.1"  # arbitrary string
+ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+
+import os
 import sys
 import PySide6
 from PySide6 import QtCore, QtGui, QtWidgets
 import PySide6.QtGui
+
+# no es usado explicitamente, pero se requiere para que pyinstaller lo agregue al .exe
+import win32timezone
 
 from Tabla import Tabla
 
@@ -15,7 +25,7 @@ print(PySide6.QtCore.__version__)
 class MainWidget(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
-        self.setMinimumSize(750, 300)
+        # self.setMinimumSize(750, 300)
         self.setAcceptDrops(True)
 
         buttons_layout = self.construirBotones()
@@ -38,11 +48,18 @@ class MainWidget(QtWidgets.QWidget):
         self.tabla.RowCountChanged.connect(self.onRowCountChanged)
         # conectar botones a tabla
         self.btnLimpiarTodo.clicked.connect(self.onLimpiarTodo)
+        self.btnUpdateNewWithOld.clicked.connect(self.onUpdateNewWithOldData)
 
         self.mainLayout.addWidget(self.tabla)
         self.mainLayout.addWidget(self.textoInicio)
         self.mainLayout.addWidget(scroll_area)
         self.mainLayout.addLayout(buttons_layout)
+
+    def onUpdateNewWithOldData(self):
+        self.btnUpdateNewWithOld.setEnabled(False)
+        rta = self.tabla.actualizarFechaTodosConElMasViejo()
+        self.textoInformacion.setText(self.textoInformacion.text() + "\n" + rta)
+        self.btnUpdateNewWithOld.setEnabled(True)
 
     def onLimpiarTodo(self):
         self.tabla.removeAllRows()
@@ -65,17 +82,43 @@ class MainWidget(QtWidgets.QWidget):
     def construirBotones(self):
         self.button_layout = QtWidgets.QHBoxLayout()
 
-        self.btnConfirmar = QtWidgets.QPushButton("Confirmar")
-        self.btnSeleccionarTodos = QtWidgets.QPushButton("Seleccionar todos")
-        self.btnDeseleccionarTodos = QtWidgets.QPushButton("Deseleccionar todos")
+        # self.btnConfirmar = QtWidgets.QPushButton("Confirmar")
+        # self.btnSeleccionarTodos = QtWidgets.QPushButton("Seleccionar todos")
+        # self.btnDeseleccionarTodos = QtWidgets.QPushButton("Deseleccionar todos")
+        # self.btnLimpiarSeleccionado = QtWidgets.QPushButton("Limpiar seleccionado")
         self.btnLimpiarTodo = QtWidgets.QPushButton("Limpiar Todo")
-        self.btnLimpiarSeleccionado = QtWidgets.QPushButton("Limpiar seleccionado")
+        self.btnUpdateNewWithOld = QtWidgets.QPushButton(
+            "Actualizar todos con informacion del mas viejo"
+        )
+        self.btnUpdateNewWithOld.setStyleSheet(
+            """
+            QPushButton {
+                background-color: green;
+                color: white;
+                border: none;
+                border-radius: 3px;
+                padding: 5px;
+            }
 
-        self.button_layout.addWidget(self.btnConfirmar)
-        self.button_layout.addWidget(self.btnSeleccionarTodos)
-        self.button_layout.addWidget(self.btnDeseleccionarTodos)
+            QPushButton:hover {
+                background-color: darkgreen;
+            }
+            QPushButton:pressed {
+                background-color: limegreen;
+            }
+            QPushButton:disabled {
+                background-color: lightgray;
+                color: darkgray;
+            }
+        """
+        )
+        # self.button_layout.addWidget(self.btnConfirmar)
+        # self.button_layout.addWidget(self.btnSeleccionarTodos)
+        # self.button_layout.addWidget(self.btnDeseleccionarTodos)
+        # self.button_layout.addWidget(self.btnLimpiarSeleccionado)
         self.button_layout.addWidget(self.btnLimpiarTodo)
-        self.button_layout.addWidget(self.btnLimpiarSeleccionado)
+        self.button_layout.addWidget(self.btnUpdateNewWithOld)
+
         return self.button_layout
 
     def dragEnterEvent(self, event):
@@ -115,11 +158,24 @@ class MainWidget(QtWidgets.QWidget):
         self.tabla.ordenar()
 
 
+def resource_path(relative_path):
+    """Obtiene la ruta absoluta al recurso, tanto si se ejecuta desde el archivo fuente o desde el archivo ejecutable."""
+    if hasattr(sys, "_MEIPASS"):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
+
+
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
+    icon_path = resource_path("3792137161586787349-128.png")
+    icon = QtGui.QIcon(icon_path)
+    app.setWindowIcon(icon)
 
     widget = MainWidget()
-    widget.resize(900, 500)
+    widget.resize(500, 400)
+
+    widget.setWindowTitle("Cambiar fechas produccion a videos")
+
     widget.show()
 
     sys.exit(app.exec())
