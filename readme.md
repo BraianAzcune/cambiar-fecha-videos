@@ -10,7 +10,7 @@ Aplicacion que permite actualizar la fecha de produccion de varios archivos de v
 
 
 #### Al arrastrar archivos
-![Al abrir aplicacion](readme-resources\al-arrastrar.png)
+![Al abrir aplicacion](readme-resources/al-arrastrar.png)
 
 
 
